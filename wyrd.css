@@ -1,0 +1,131 @@
+/* Estilos Base (Mobile Landscape) */
+html, body {
+    margin: 0; padding: 0;
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+    background-color: #0e0f10;
+    font-family: Inter, Arial, sans-serif;
+    color: #e6e6e8;
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+}
+
+/* --- CORREÇÕES AQUI --- */
+#game-screen { /* Era .game-screen */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    padding: 8px;
+    box-sizing: border-box; /* Garante que o padding não quebre o layout */
+}
+
+#game-container { /* Era .game-container */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    gap: 8px;
+    position: relative;
+}
+
+#game-canvas { /* Era .game-canvas */
+    order: 1; /* Garante que o canvas fique à esquerda */
+    flex-grow: 1;
+    background-color: #111217;
+    border-radius: 12px;
+}
+
+/* Painel da UI */
+#ui-panel { /* Era .ui-panel */
+    order: 2; /* Garante que o painel fique à direita */
+    width: 280px;
+    flex-shrink: 0;
+    background: #171717;
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+}
+/* --- FIM DAS CORREÇÕES --- */
+
+/* O resto do código continua igual, pois usa classes que estão corretas no HTML */
+.tabs { display:flex; gap:6px; justify-content:center; margin-bottom:10px; }
+.tab-button { background:rgba(255,255,255,0.03); color:#bfc3c9; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:1rem; }
+.profile-row { display:flex; gap:12px; align-items:center; margin-bottom:8px; }
+.portrait-wrap { width:72px; height:72px; border-radius:10px; overflow:hidden; background:#111; }
+.portrait-wrap img { width:100%; height:100%; object-fit:cover; }
+.player-stats { flex:1; font-size:.95rem; }
+.player-stats h2 { margin:0 0 6px 0; color:#4ade80; font-size:.95rem; }
+.ui-content { flex-grow: 1; overflow-y: auto; background: rgba(0,0,0,0.2); border-radius: 10px; padding: 12px; min-height: 100px; }
+.ui-log { flex: none; height: 150px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px; margin-top: 8px; overflow-y: auto; font-size: 0.9em; }
+
+/* Controles Mobile */
+#mobile-controls { /* Era .mobile-controls */
+    position: absolute;
+    bottom: 15px; left: 15px; right: 15px;
+    display: flex; justify-content: space-between; align-items: flex-end;
+    pointer-events: none; z-index: 100;
+}
+.dpad { display: grid; grid-template-areas: ". up ." "left . right" ". down ."; gap: 8px; width: 150px; height: 150px; pointer-events: auto; }
+.dpad-btn, .action-btn { width: 45px; height: 45px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); color: white; font-size: 1.5rem; border-radius: 50%; cursor: pointer; -webkit-user-select: none;  user-select: none; }
+.action-btn { width: 60px; height: 60px; font-size: 2rem; pointer-events: auto; }
+#dpad-up { grid-area: up; } #dpad-down { grid-area: down; } #dpad-left { grid-area: left; } #dpad-right { grid-area: right; }
+
+#combat-screen {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    color: white;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 20px;
+    justify-content: space-between; /* Altera a justificação */
+}
+.combat-log { font-size: 1.2rem; margin-bottom: 20px; }
+#attack-btn { padding: 15px 30px; font-size: 1.5rem; cursor: pointer; }
+
+.combat-arena {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    flex-grow: 1;
+}
+.combatant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.combatant img {
+    max-height: 200px;
+    image-rendering: pixelated; /* Mantém o estilo pixel art */
+}
+#player-combatant img {
+    max-height: 250px;
+}
+.hp-bar-container {
+    width: 150px;
+    height: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    margin-top: 10px;
+}
+.hp-bar {
+    height: 100%;
+    background-color: #ef4444; /* Vermelho */
+    transition: width 0.3s ease-in-out;
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+.shake {
+    animation: shake 0.3s;
+}
