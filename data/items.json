@@ -1,0 +1,6 @@
+[
+    { "id": "potion_heal", "name": "Poção", "target": "self", "effect": { "action": "restore_hp", "amount": 20 }},
+    { "id": "ether_small", "name": "Éter Pequeno", "target": "self", "effect": { "action": "restore_ep", "amount": 10 }},
+    { "id": "bomb", "name": "Bomba", "target": "all_enemies", "effect": { "action": "damage_hp", "amount": 15 }},
+    { "id": "stone_skin", "name": "Pele de Pedra", "target": "self", "effect": { "action": "buff_def", "amount": 2, "duration": 3 }}
+]

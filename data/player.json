@@ -1,23 +1,19 @@
 {
   "player": {
     "id": "player",
-    "char": "@",
     "trait": "humanoid",
     "color": "cyan",
-    "maxHp": 230,
-    "maxMp": 10,
-    "atk": 30,
-    "def": 0,
+    "maxHp": 20,
+    "maxEp": 10,
+    "atk": 5,
+    "def": 1,
     "hit": 75,
     "eva": 5,
     "critChance": 5,
-    "critMult": 2,
-    "xp": 0,
+    "critMult": 1.5,
+    "speed": 10,
     "level": 1,
-    "speed": 5,
-    "skills": ["slash", "fireball"],
-    "items": ["potion_small"],
-    "spriteWander": "assets/wander/player.png",
-    "spriteBattle": "assets/battle/player.png"
+    "skills": ["fireball"],
+    "inventory": ["potion_heal"]
   }
 }

@@ -1,9 +1,10 @@
 // core/GameManager.js
+import { TILE } from './Contants.js';
 import UIManager from './UImanager.js';
 import Renderer from './Renderer.js';
 import MapManager from './MapManager.js';
 import { loadAllGameData, getDef } from './DataManager.js';
-import { Player, Monster, preloadImages } from './EntityManager.js'; // Adiciona preloadImages
+import { Player, preloadImages } from './EntityManager.js';
 import InputManager from './InputManager.js';
 import CombatManager from './CombatManager.js';
 
@@ -11,10 +12,13 @@ export default class GameManager {
     constructor(container) {
         this.container = container;
         this.gameState = 'MainMenu';
+
         this.uiManager = new UIManager(container);
         this.inputManager = new InputManager();
         this.mapManager = new MapManager();
+
         this.renderer = null;
+        this.combatManager = null;
         this.currentMap = null;
         this.player = null;
         this.entities = [];
@@ -23,26 +27,16 @@ export default class GameManager {
         this.timeSinceMove = 0;
     }
 
-    // ÚNICA E CORRETA VERSÃO DO 'start'
     async start() {
         console.log("Iniciando carregamento...");
-        
-        // Lista de imagens essenciais para o jogo começar
         const essentialAssets = [
-            'assets/wander/player.png',
-            'assets/wander/goblin.png',
-            'assets/wander/rat.png',
-            'assets/wander/skeleton.png',
-            // --- CÓDIGO NOVO ---
-            'assets/battle/player.png',
-            'assets/battle/goblin.png',
-            'assets/battle/rat.png',
-            'assets/battle/skeleton.png'
+            'assets/wander/player.png', 'assets/wander/goblin.png', 'assets/wander/rat.png', 'assets/wander/skeleton.png',
+            'assets/battle/player.png', 'assets/battle/goblin.png', 'assets/battle/rat.png', 'assets/battle/skeleton.png',
+            'assets/player-portrait.png'
         ];
         
-        // Usa o Promise.all para carregar tudo em paralelo
         await Promise.all([
-            loadAllGameData(), // Substitui o antigo loadMobData()
+            loadAllGameData(),
             preloadImages(essentialAssets)
         ]);
 
@@ -50,49 +44,60 @@ export default class GameManager {
         this.changeState('Playing');
     }
 
-    // ÚNICA E CORRETA VERSÃO DO 'changeState'
     changeState(newState, data) {
         this.gameState = newState;
         console.log(`O estado do jogo mudou para: ${newState}`);
 
         if (this.gameState === 'Playing') {
-            const { canvas } = this.uiManager.createGameUI();
-            this.renderer = new Renderer(canvas);
-            this.loadLevel(1);
-            requestAnimationFrame(this.gameLoop.bind(this));
+            // Se estamos voltando do combate, não precisa recriar a UI
+            if (!this.renderer) {
+                const { canvas } = this.uiManager.createGameUI();
+                this.renderer = new Renderer(canvas);
+                this.loadLevel(1);
+                requestAnimationFrame(this.gameLoop.bind(this));
+            }
         }
 
         if (this.gameState === 'Combat') {
-            // Pausa o loop de exploração
             this.combatManager = new CombatManager(
                 this.uiManager,
-                data.allies,  // << CORRETO: Passando a LISTA de aliados
-                data.enemies, // << CORRETO: Passando a LISTA de inimigos
+                data.allies,
+                data.enemies,
                 (result, enemiesDefeated) => this.onCombatEnd(result, enemiesDefeated)
             );
         }
     }
 
     onCombatEnd(result, enemiesDefeated) {
+        this.combatManager = null; // Limpa o gerenciador de combate
         console.log(`Combate finalizado com resultado: ${result}`);
         if (result === 'win') {
             const defeatedIds = enemiesDefeated.map(e => e.id);
             this.entities = this.entities.filter(e => !defeatedIds.includes(e.id));
+            this.uiManager.log("Você venceu a batalha!");
         } else if (result === 'lose') {
             alert("VOCÊ MORREU!");
             window.location.reload();
         } else if (result === 'fled') {
-            console.log("Você fugiu da batalha.");
+            this.uiManager.log("Você fugiu da batalha.");
         }
-        this.gameState = 'Playing'; // Volta para a exploração
+        this.changeState('Playing');
     }
 
     loadLevel(levelNumber) {
         const levelData = this.mapManager.generateDungeon(50, 30);
         this.currentMap = levelData;
+        this.currentMap.floorNumber = levelNumber; // Adiciona o número do andar
+
         const startPos = this.currentMap.startPoint;
         this.player = new Player(startPos.x, startPos.y);
+        
+        // Exemplo: Adiciona skills iniciais ao jogador a partir do JSON
+        const startingSkill = getDef('skills', 'fireball');
+        if(startingSkill) this.player.skills.push(startingSkill);
+
         this.entities = [this.player, ...levelData.entities];
+        this.uiManager.log(`Bem-vindo ao Andar ${levelNumber}.`);
     }
 
     gameLoop(currentTime) {
@@ -101,11 +106,13 @@ export default class GameManager {
             const deltaTime = currentTime - this.lastTime;
             this.lastTime = currentTime;
 
-            // Só atualiza e renderiza se estiver no estado 'Playing'
             if (this.gameState === 'Playing') {
                 this.update(deltaTime);
                 this.render();
             }
+
+            // Atualiza a UI lateral independentemente do estado do jogo
+            this.uiManager.update(this.player, this.currentMap?.floorNumber);
 
             requestAnimationFrame(this.gameLoop.bind(this));
         } catch (e) {
@@ -115,53 +122,86 @@ export default class GameManager {
 
     update(deltaTime) {
         this.timeSinceMove += deltaTime;
-        if (this.timeSinceMove < this.moveCooldown) return;
+        if (this.timeSinceMove >= this.moveCooldown) {
+            let dx = 0;
+            let dy = 0;
 
-        let dx = 0;
-        let dy = 0;
+            if (this.inputManager.keys.up) dy = -1;
+            else if (this.inputManager.keys.down) dy = 1;
+            else if (this.inputManager.keys.left) dx = -1;
+            else if (this.inputManager.keys.right) dx = 1;
 
-        if (this.inputManager.keys.up) dy = -1;
-        else if (this.inputManager.keys.down) dy = 1;
-        else if (this.inputManager.keys.left) dx = -1;
-        else if (this.inputManager.keys.right) dx = 1;
+            if (dx !== 0 || dy !== 0) {
+                this.player.move(dx, dy, this.mapManager);
+                this.timeSinceMove = 0;
+                this._checkForCombat();
+            }
+        }
+        this._checkForInteraction();
+    }
 
-        if (dx !== 0 || dy !== 0) {
-            this.player.move(dx, dy, this.mapManager);
-            this.timeSinceMove = 0;
-            this._checkForCombat();
+    _checkForInteraction() {
+        if (!this.inputManager.keys.action) return;
+        this.inputManager.keys.action = false; // Consome a ação para evitar repetição
+
+        const p = this.player;
+        const surroundingTiles = [
+            { x: p.x, y: p.y - 1 }, { x: p.x, y: p.y + 1 },
+            { x: p.x - 1, y: p.y }, { x: p.x + 1, y: p.y }
+        ];
+
+        for (const tilePos of surroundingTiles) {
+            const tile = this.mapManager.tiles[tilePos.y]?.[tilePos.x];
+            if (tile === TILE.CHEST) {
+                const item = getDef('items', 'potion_heal');
+                if (item) {
+                    this.player.inventory.push(item);
+                    this.mapManager.tiles[tilePos.y][tilePos.x] = TILE.FLOOR;
+                    this.uiManager.log(`Você encontrou: ${item.name}!`);
+                }
+                return;
+            }
+            if (tile === TILE.BOOKSHELF) {
+                const skill = getDef('skills', 'heal_light');
+                if (skill && !this.player.skills.find(s => s.id === skill.id)) {
+                    this.player.skills.push(skill);
+                    this.mapManager.tiles[tilePos.y][tilePos.x] = TILE.FLOOR;
+                    this.uiManager.log(`Você aprendeu: ${skill.name}!`);
+                } else if (skill) {
+                    this.uiManager.log("Você já conhece esta habilidade.");
+                }
+                return;
+            }
         }
     }
 
     _checkForCombat() {
-        const COMBAT_RADIUS = 3; // Raio de 3 tiles para puxar inimigos
+        const COMBAT_RADIUS = 3;
         const enemiesInVicinity = [];
         let collisionEnemy = null;
 
         for (const entity of this.entities) {
             if (entity === this.player) continue;
-
-            // Encontra o inimigo da colisão direta
             if (this.player.x === entity.x && this.player.y === entity.y) {
                 collisionEnemy = entity;
+                break; // Achamos a colisão, podemos parar
             }
         }
         
         if (collisionEnemy) {
-            // Se houve colisão, encontra todos os outros inimigos próximos
             for (const entity of this.entities) {
-                if (entity === this.player) continue;
+                if (entity === this.player || entity.hp <= 0) continue; // Ignora jogador e mortos
                 const distance = Math.sqrt(Math.pow(collisionEnemy.x - entity.x, 2) + Math.pow(collisionEnemy.y - entity.y, 2));
                 if (distance <= COMBAT_RADIUS) {
                     enemiesInVicinity.push(entity);
                 }
             }
             
-            // Garante que o inimigo da colisão está na lista, mesmo que seja o único
             if (!enemiesInVicinity.includes(collisionEnemy)) {
                 enemiesInVicinity.push(collisionEnemy);
             }
 
-            console.log(`${enemiesInVicinity.length} inimigos entraram em combate!`);
+            this.uiManager.log(`${enemiesInVicinity.length} inimigos se aproximam!`);
             this.changeState('Combat', { allies: [this.player], enemies: enemiesInVicinity });
         }
     }

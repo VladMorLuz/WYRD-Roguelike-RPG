@@ -11,7 +11,9 @@ export default class Renderer {
         // Cores do nosso mapa
         this.colors = {
             [TILE.FLOOR]: '#2b2b2b',
-            [TILE.WALL]: '#444'
+            [TILE.WALL]: '#444',
+            [TILE.CHEST]: '#f59e0b',    
+            [TILE.BOOKSHELF]: '#a855f7'
         };
     }
 

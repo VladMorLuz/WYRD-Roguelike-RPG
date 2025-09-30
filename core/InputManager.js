@@ -30,36 +30,23 @@ export default class InputManager {
     }
 
     _addEventListeners() {
-        // Eventos de Teclado
+        // Eventos de Teclado (continua igual)
         window.addEventListener('keydown', e => {
             const action = this.keyMap[e.key];
-            if (action) {
-                this.keys[action] = true;
-            }
+            if (action) this.keys[action] = true;
         });
         window.addEventListener('keyup', e => {
             const action = this.keyMap[e.key];
-            if (action) {
-                this.keys[action] = false;
-            }
+            if (action) this.keys[action] = false;
         });
 
-        // Eventos de Toque (usando 'setTimeout' para garantir que os botões já existam)
-        setTimeout(() => {
-            for (const [elementId, action] of Object.entries(this.touchMap)) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    element.addEventListener('touchstart', e => {
-                        e.preventDefault();
-                        this.keys[action] = true;
-                    }, { passive: false });
-
-                    element.addEventListener('touchend', e => {
-                        e.preventDefault();
-                        this.keys[action] = false;
-                    }, { passive: false });
-                }
+        // --- CÓDIGO NOVO ---
+        // Ouvinte para os nossos eventos customizados vindos da UI
+        window.addEventListener('virtual-input', (e) => {
+            const { action, active } = e.detail;
+            if (this.keys.hasOwnProperty(action)) {
+                this.keys[action] = active;
             }
-        }, 0);
+        });
     }
 }

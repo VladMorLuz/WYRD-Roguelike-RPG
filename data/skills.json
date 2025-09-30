@@ -1,0 +1,5 @@
+[
+    { "id": "fireball", "name": "Bola de Fogo", "cost": 4, "target": "enemy_single", "effect": { "action": "damage_hp", "amount": 25 }},
+    { "id": "heal_light", "name": "Cura Leve", "cost": 3, "target": "self", "effect": { "action": "restore_hp", "amount": 15 }},
+    { "id": "cleave", "name": "Clivagem", "cost": 5, "target": "all_enemies", "effect": { "action": "damage_hp", "amount": 10 }}
+]

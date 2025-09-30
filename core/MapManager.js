@@ -46,7 +46,6 @@ export default class MapManager {
             }
         }
 
-        // --- INÍCIO DO CÓDIGO NOVO ---
         const entities = [];
         // Para cada sala (exceto a primeira, onde o jogador começa)
         for (let i = 1; i < rooms.length; i++) {
@@ -62,7 +61,14 @@ export default class MapManager {
                 }
             }
         }
-        // --- FIM DO CÓDIGO NOVO ---
+        for (const room of rooms) {
+            if (Math.random() < 0.2) { // 20% de chance
+                const x = this._randomInt(room.x + 1, room.x + room.w - 2);
+                const y = this._randomInt(room.y + 1, room.y + room.h - 2);
+                // 50/50 chance de ser baú ou estante
+                this.tiles[y][x] = (Math.random() > 0.5) ? TILE.CHEST : TILE.BOOKSHELF;
+            }
+        }
         
         const startRoom = rooms[0];
         this.entryPoint = { x: startRoom.center.x, y: startRoom.center.y };
