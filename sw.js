@@ -1,10 +1,11 @@
-const CACHE_NAME = 'wyrd-cache-v5.4';
+const CACHE_NAME = 'wyrd-game-cache-v1.0';
 const urlsToCache = [
   '/',
   '/index.html',
   '/style/wyrd.css',
   '/core/Constants.js',
-  '/core/UIanager.js',
+  '/core/UImanager.js',
+  '/core/DataManager.js',
   '/core/MapManager.js',
   '/core/EntityManager.js',
   '/core/GameManager.js',

@@ -1,3 +1,6 @@
+import { getDef } from './DataManager.js'; // Adicione este import
+
+
 export function preloadImages(sources) {
     const promises = sources.map(src => {
         return new Promise((resolve, reject) => {
@@ -9,7 +12,6 @@ export function preloadImages(sources) {
     });
     return Promise.all(promises);
 }
-let MOB_DEFS = []; // Vai guardar os dados de mobs.json
 
 // Função para carregar os dados dos monstros do arquivo JSON
 export async function loadMobData() {
@@ -30,11 +32,12 @@ export class Entity {
         this.x = x;
         this.y = y;
         this.id = crypto.randomUUID(); // ID único para cada entidade
+        this.turnMeter = 0; // Barra de ATB de cada entidade
+        this.isDefending = false;
     }
 }
 
 export class Player extends Entity {
-    // ... (seu código do Player continua igual)
     constructor(x, y) {
         super(x, y);
         this.maxHp = 20;
@@ -46,6 +49,9 @@ export class Player extends Entity {
         this.sprite.src = 'assets/wander/player.png';
         this.battleSprite = new Image();
         this.battleSprite.src = 'assets/battle/player.png'; //
+// Inventário de itens e habilidades
+        this.inventory = []; 
+        this.skills = [];
     }
     move(dx, dy, map) {
         const newX = this.x + dx;
@@ -57,30 +63,24 @@ export class Player extends Entity {
     }
 }
 
-// --- INÍCIO DO CÓDIGO NOVO ---
 export class Monster extends Entity {
     constructor(id, x, y) {
         super(x, y);
-        const data = MOB_DEFS.find(m => m.id === id);
+        const data = getDef('mobs', id);
         if (!data) {
             console.error(`Monstro com id "${id}" não encontrado em mobs.json`);
             return;
         }
         
-        // Copia os dados do JSON para a classe
         this.name = data.id;
         this.maxHp = Array.isArray(data.maxHp) ? data.maxHp[0] : data.maxHp;
         this.hp = this.maxHp;
         this.atk = Array.isArray(data.atk) ? data.atk[0] : data.atk;
         this.def = Array.isArray(data.def) ? data.def[0] : data.def;
-        
-        // Carrega o sprite
+        this.speed = data.speed || 5; //
         this.sprite = new Image();
         this.sprite.src = data.spriteWander || `assets/wander/${id}.png`; //
-        
-        // --- CÓDIGO NOVO ---
         this.battleSprite = new Image();
         this.battleSprite.src = data.spriteBattle || `assets/battle/${id}.png`;
     }
 }
-// --- FIM DO CÓDIGO NOVO ---

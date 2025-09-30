@@ -2,7 +2,8 @@
 import UIManager from './UImanager.js';
 import Renderer from './Renderer.js';
 import MapManager from './MapManager.js';
-import { Player, Monster, loadMobData, preloadImages } from './EntityManager.js'; // Adiciona preloadImages
+import { loadAllGameData, getDef } from './DataManager.js';
+import { Player, Monster, preloadImages } from './EntityManager.js'; // Adiciona preloadImages
 import InputManager from './InputManager.js';
 import CombatManager from './CombatManager.js';
 
@@ -41,7 +42,7 @@ export default class GameManager {
         
         // Usa o Promise.all para carregar tudo em paralelo
         await Promise.all([
-            loadMobData(),
+            loadAllGameData(), // Substitui o antigo loadMobData()
             preloadImages(essentialAssets)
         ]);
 
@@ -65,25 +66,25 @@ export default class GameManager {
             // Pausa o loop de exploração
             this.combatManager = new CombatManager(
                 this.uiManager,
-                this.player,
-                data.enemy,
-                (result, enemyDefeated) => this.onCombatEnd(result, enemyDefeated)
+                data.allies,  // << CORRETO: Passando a LISTA de aliados
+                data.enemies, // << CORRETO: Passando a LISTA de inimigos
+                (result, enemiesDefeated) => this.onCombatEnd(result, enemiesDefeated)
             );
         }
     }
 
-    onCombatEnd(result, enemyDefeated) {
+    onCombatEnd(result, enemiesDefeated) {
         console.log(`Combate finalizado com resultado: ${result}`);
         if (result === 'win') {
-            // Remove o inimigo da lista de entidades
-            this.entities = this.entities.filter(e => e.id !== enemyDefeated.id);
-        } else {
-            // Fim de jogo
+            const defeatedIds = enemiesDefeated.map(e => e.id);
+            this.entities = this.entities.filter(e => !defeatedIds.includes(e.id));
+        } else if (result === 'lose') {
             alert("VOCÊ MORREU!");
             window.location.reload();
+        } else if (result === 'fled') {
+            console.log("Você fugiu da batalha.");
         }
-        // Volta para o estado de exploração
-        this.gameState = 'Playing';
+        this.gameState = 'Playing'; // Volta para a exploração
     }
 
     loadLevel(levelNumber) {
@@ -132,12 +133,36 @@ export default class GameManager {
     }
 
     _checkForCombat() {
+        const COMBAT_RADIUS = 3; // Raio de 3 tiles para puxar inimigos
+        const enemiesInVicinity = [];
+        let collisionEnemy = null;
+
         for (const entity of this.entities) {
             if (entity === this.player) continue;
+
+            // Encontra o inimigo da colisão direta
             if (this.player.x === entity.x && this.player.y === entity.y) {
-                this.changeState('Combat', { enemy: entity });
-                return;
+                collisionEnemy = entity;
             }
+        }
+        
+        if (collisionEnemy) {
+            // Se houve colisão, encontra todos os outros inimigos próximos
+            for (const entity of this.entities) {
+                if (entity === this.player) continue;
+                const distance = Math.sqrt(Math.pow(collisionEnemy.x - entity.x, 2) + Math.pow(collisionEnemy.y - entity.y, 2));
+                if (distance <= COMBAT_RADIUS) {
+                    enemiesInVicinity.push(entity);
+                }
+            }
+            
+            // Garante que o inimigo da colisão está na lista, mesmo que seja o único
+            if (!enemiesInVicinity.includes(collisionEnemy)) {
+                enemiesInVicinity.push(collisionEnemy);
+            }
+
+            console.log(`${enemiesInVicinity.length} inimigos entraram em combate!`);
+            this.changeState('Combat', { allies: [this.player], enemies: enemiesInVicinity });
         }
     }
 

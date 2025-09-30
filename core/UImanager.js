@@ -103,53 +103,112 @@ export default class UIManager {
             `;
     }
 
-    showCombatUI(player, enemy, onAction) {
+    showCombatUI(allies, enemies) {
         let combatScreen = document.getElementById('combat-screen');
         if (combatScreen) combatScreen.remove();
 
         combatScreen = this._createElement('div', 'combat-screen');
+        
+        let alliesHtml = allies.map(a => this._createCombatantHtml(a, 'ally')).join('');
+        let enemiesHtml = enemies.map(e => this._createCombatantHtml(e, 'enemy')).join('');
+
         combatScreen.innerHTML = `
             <div class="combat-arena">
-                <div class="combatant" id="enemy-combatant">
-                    <img src="${enemy.battleSprite.src}" alt="${enemy.name}">
-                    <div class="hp-bar-container">
-                        <div class="hp-bar" id="enemy-hp-bar" style="width: 100%;"></div>
-                    </div>
-                </div>
-                <div class="combatant" id="player-combatant">
-                    <img src="${player.battleSprite.src}" alt="Player">
-                    <div class="hp-bar-container">
-                        <div class="hp-bar" id="player-hp-bar" style="width: 100%;"></div>
-                    </div>
-                </div>
+                <div class="combat-team" id="enemies-team">${enemiesHtml}</div>
+                <div class="combat-team" id="allies-team">${alliesHtml}</div>
             </div>
-            <div class="combat-log">Batalha contra ${enemy.name}!</div>
-            <div class="combat-actions">
-                <button id="attack-btn">ATACAR</button>
-            </div>
+            <div class="combat-log-container"><div class="combat-log"></div></div>
+            <div id="action-menu-container"></div>
         `;
         this.appContainer.appendChild(combatScreen);
-
-        document.getElementById('attack-btn').onclick = () => onAction('attack');
     }
 
-    // Adicione este novo método para atualizar a UI durante a batalha
-    updateCombatUI(player, enemy) {
-        const playerHpBar = document.getElementById('player-hp-bar');
-        const enemyHpBar = document.getElementById('enemy-hp-bar');
-        if (playerHpBar) {
-            playerHpBar.style.width = `${(player.hp / player.maxHp) * 100}%`;
+    // Adicione esta função auxiliar
+    _createCombatantHtml(c, type) {
+        return `
+            <div class="combatant" id="combatant-${c.id}" data-combatant-id="${c.id}">
+                <img src="${c.battleSprite.src}" alt="${c.name || 'Player'}">
+                <div class="atb-bar-container">
+                    <div class="atb-bar" style="width: 0%;"></div>
+                </div>
+                <div class="hp-bar-container">
+                    <div class="hp-bar" style="width: 100%;"></div>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Substitua o updateCombatUI
+    updateCombatUI(combatants) {
+        for (const c of combatants) {
+            const c_element = document.querySelector(`[data-combatant-id="${c.id}"]`);
+            if (c_element) {
+                const hp_bar = c_element.querySelector('.hp-bar');
+                const atb_bar = c_element.querySelector('.atb-bar');
+                hp_bar.style.width = `${Math.max(0, c.hp / c.maxHp) * 100}%`;
+                atb_bar.style.width = `${(c.turnMeter / 100) * 100}%`;
+            }
         }
-        if (enemyHpBar) {
-            enemyHpBar.style.width = `${(enemy.hp / enemy.maxHp) * 100}%`;
+    }
+
+    // Adicione a função para o menu de ações
+    showActionMenu(player, onActionCallback) {
+        const container = document.getElementById('action-menu-container');
+        if (!container) return;
+        container.innerHTML = `
+            <div class="action-menu">
+                <button data-action="attack">Atacar</button>
+                <button data-action="defend">Defender</button>
+                <button data-action="item">Item</button>
+                <button data-action="skill">Habilidade</button>
+                <button data-action="flee">Fugir</button>
+            </div>
+        `;
+        container.querySelector('.action-menu').onclick = (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const action = e.target.dataset.action;
+                // Se for item ou skill, mostra o submenu. Senão, executa a ação.
+                if (action === 'item' || action === 'skill') {
+                    this.showSubMenu(player, action, onActionCallback);
+                } else {
+                    container.innerHTML = '';
+                    onActionCallback(action);
+                }
+            }
+        };
+    }
+
+    // Crie esta nova função para os submenus
+    showSubMenu(player, type, onActionCallback) {
+        const container = document.getElementById('action-menu-container');
+        if (!container) return;
+
+        const list = (type === 'item') ? player.inventory : player.skills;
+        let listHtml = list.map(item => `<button data-action="${type}" data-id="${item.id}">${item.name}</button>`).join('');
+        if (list.length === 0) {
+            listHtml = `<p>Nenhum ${type} disponível.</p>`;
         }
 
-        // Animação de dano
-        const enemySprite = document.querySelector('#enemy-combatant img');
-        if (enemySprite) {
-            enemySprite.classList.add('shake');
-            setTimeout(() => enemySprite.classList.remove('shake'), 300);
-        }
+        container.innerHTML = `
+            <div class="action-menu">
+                ${listHtml}
+                <button data-action="cancel">Cancelar</button>
+            </div>
+        `;
+
+        container.querySelector('.action-menu').onclick = (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const action = e.target.dataset.action;
+                if (action === 'cancel') {
+                    // Se cancelar, mostra o menu principal de novo
+                    this.showActionMenu(player, onActionCallback);
+                } else {
+                    container.innerHTML = '';
+                    // Envia a ação E o ID do item/skill usado
+                    onActionCallback(action, e.target.dataset.id);
+                }
+            }
+        };
     }
 
     hideCombatUI() {
